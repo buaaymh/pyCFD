@@ -71,15 +71,13 @@ class VrApproach(abc.ABC):
     for i in range(7):
       for j in range(self._num_cells):
         if j == 0:
-          coef_m, coef_r = cells[j].get_coef(), cells[j+1].get_coef()
-          temp = np.dot(np.dot(self._A_inv[j], self._B_mat[j+1]), coef_r)
+          coef_l, coef_m, coef_r = cells[j].get_coef(), cells[j].get_coef(), cells[j+1].get_coef()
         elif j == self._num_cells-1:
-          coef_l, coef_m = cells[j-1].get_coef(), cells[j].get_coef()
-          temp = np.dot(np.dot(self._A_inv[j], np.transpose(self._B_mat[j])), coef_l)
+          coef_l, coef_m, coef_r = cells[j-1].get_coef(), cells[j].get_coef(), cells[j].get_coef()
         else:
           coef_l, coef_m, coef_r = cells[j-1].get_coef(), cells[j].get_coef(), cells[j+1].get_coef()
-          temp = np.dot(np.dot(self._A_inv[j], np.transpose(self._B_mat[j])), coef_l) + \
-          np.dot(np.dot(self._A_inv[j], self._B_mat[j+1]), coef_r)
+        temp = np.dot(np.dot(self._A_inv[j], np.transpose(self._B_mat[j])), coef_l) + \
+               np.dot(np.dot(self._A_inv[j], self._B_mat[j+1]), coef_r)
         coef_m = coef_m * (-0.3) + 1.3 * (temp + np.dot(self._A_inv[j], b_vec[j]))
         cells[j].set_coef(coef_m)
 
@@ -103,14 +101,14 @@ class VrApproach(abc.ABC):
       for j in range(self._num_cells):
         if j == 0:
           coef_m, coef_r = cells[j].get_coef(), cells[j+1].get_coef()
-          temp = np.dot(np.dot(self._A_inv[j], self._B_mat[j+1]), coef_r)
+          coef_l = coef_m * [1, -1, 1]
         elif j == self._num_cells-1:
           coef_l, coef_m = cells[j-1].get_coef(), cells[j].get_coef()
-          temp = np.dot(np.dot(self._A_inv[j], np.transpose(self._B_mat[j])), coef_l)
+          coef_r = coef_m * [1, -1, 1]
         else:
           coef_l, coef_m, coef_r = cells[j-1].get_coef(), cells[j].get_coef(), cells[j+1].get_coef()
-          temp = np.dot(np.dot(self._A_inv[j], np.transpose(self._B_mat[j])), coef_l) + \
-          np.dot(np.dot(self._A_inv[j], self._B_mat[j+1]), coef_r)
+        temp = np.dot(np.dot(self._A_inv[j], np.transpose(self._B_mat[j])), coef_l) + \
+               np.dot(np.dot(self._A_inv[j], self._B_mat[j+1]), coef_r)
         coef_m = coef_m * (-0.3) + 1.3 * (temp + np.dot(self._A_inv[j], b_vec[j]))
         cells[j].set_coef(coef_m)
 
