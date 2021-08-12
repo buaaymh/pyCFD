@@ -213,5 +213,3 @@ class VrP3Approach(VrApproach):
         for k in range(p):
           A_mat[i,j] += f[k][i] * f[k][j] * self._p[k]
     return A_mat
-
-  

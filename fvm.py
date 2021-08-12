@@ -1,10 +1,11 @@
 import abc
 import numpy as np
 import math
+from time import*
 
 from fdm import NumericalSolver
 import riemann
-from fv_cell import VrP1Cell, VrP2Cell, VrP3Cell
+from fv_cell import VrP1Cell, VrP2Cell, VrP3Cell, LinearCell
 from vr_approach import VrP1Approach, VrP2Approach, VrP3Approach
 from time_scheme import RK3ForVr
 from equation import Euler1d
@@ -49,6 +50,7 @@ class VrSolver(NumericalSolver):
     # time march
     self._time_scheme.set_rhs(rhs=lambda cells: self.eval_rhs(cells))
     for i in range(1, self.t_num+1):
+      if (i%50 == 0): print('run : {:.2%}'.format(i / self.t_num))
       self._time_scheme.get_cells_new(self.cells, self.dt)
       for j in range(self.x_num):
         self.u_mat[j] = self.cells[j].get_u_mean()
@@ -62,6 +64,7 @@ class VrSolver(NumericalSolver):
     # time march
     self._time_scheme.set_rhs(rhs=lambda cells: self.eval_rhs(cells))
     for i in range(1, self.t_num+1):
+      if (i%50 == 0): print('run : {:.2%}'.format(i / self.t_num))
       self._time_scheme.get_cells_new(self.cells, self.dt)
       for j in range(self.x_num):
         self.u_mat[i,j] = self.cells[j].get_u_mean()
@@ -107,7 +110,7 @@ class VrSolver(NumericalSolver):
     flux = np.zeros((self.x_num+1, self.riemann.num_equations()))
     self._vr.reconstruct_reflect(self.cells)
     self._limiter.limit_free_reflect(self.cells)
-    # self._trouble_history.append(self._limiter.get_trouble_history_vec())
+    self._trouble_history.append(self._limiter.get_trouble_history_vec())
     flux[0] = self.riemann.eval_reflected_flux(cells[0].u_on_left(), -1)
     flux[-1] = self.riemann.eval_reflected_flux(cells[-1].u_on_right(), 1)
     for i in range(1, self.x_num):
@@ -124,46 +127,14 @@ class VrSolver(NumericalSolver):
       rhs[i] = flux[i] - flux[i+1]
     rhs /= self.dx
   
-  def reconstruct_reflect(self, cells):
-    b_vec = np.zeros((self.x_num, self._degree, self.riemann.num_equations()))
-    for i in range(self.x_num):
-      fron_diff, back_diff = np.zeros(self.riemann.num_equations()), np.zeros(self.riemann.num_equations())
-      if i == 0:
-        fron_diff[1] -= cells[i].get_u_mean()[1] * 4
-        back_diff = cells[i+1].get_u_mean() - cells[i].get_u_mean()
-      elif i == self.x_num-1:
-        fron_diff = cells[i-1].get_u_mean() - cells[i].get_u_mean()
-        back_diff[1] -= cells[i].get_u_mean()[1] * 4
-      else:
-        fron_diff = cells[i-1].get_u_mean() - cells[i].get_u_mean()
-        back_diff = cells[i+1].get_u_mean() - cells[i].get_u_mean()
-      b_vec[i] = np.outer(cells[i].f_p0_vec(cells[i].x_left()), fron_diff) + \
-                 np.outer(cells[i].f_p0_vec(cells[i].x_right()), back_diff)
-      b_vec *= cells[0].p0()
-    for i in range(3):
-      for j in range(self.x_num):
-        if j == 0:
-          coef_m, coef_r = cells[j].get_coef(), cells[j+1].get_coef()
-          temp = np.dot(np.dot(self._A_inv[j], np.transpose(self._B_mat[j+1])), coef_r)
-        elif j == self.x_num-1:
-          coef_l, coef_m = cells[j-1].get_coef(), cells[j].get_coef()
-          temp = np.dot(np.dot(self._A_inv[j], self._B_mat[j]), coef_l)
-        else:
-          coef_l, coef_m, coef_r = cells[j-1].get_coef(), cells[j].get_coef(), cells[j+1].get_coef()
-          temp = np.dot(np.dot(self._A_inv[j], self._B_mat[j]), coef_l) + \
-          np.dot(np.dot(self._A_inv[j], np.transpose(self._B_mat[j+1])), coef_r)
-        coef_m = coef_m * (-0.3) + 1.3 * (temp + np.dot(self._A_inv[j], b_vec[j]))
-        cells[j].set_coef(coef_m)
-
-    
 if __name__ == '__main__':
     # Set Initial Condition:
     from equation import Euler1d
     euler = Euler1d(gamma=1.4)
     U_l = euler.u_p_rho_to_U(u=0, p=1.0, rho=1.0)
     U_r = euler.u_p_rho_to_U(u=0, p=0.1, rho=0.125)
-    U_l = euler.u_p_rho_to_U(u=0.698, p=3.528, rho=0.445)
-    U_r = euler.u_p_rho_to_U(u=0, p=0.571, rho=0.5)
+    # U_l = euler.u_p_rho_to_U(u=0.698, p=3.528, rho=0.445)
+    # U_r = euler.u_p_rho_to_U(u=0, p=0.571, rho=0.5)
     def initial(x):
       if x < 0.5:
         return U_l
@@ -171,43 +142,46 @@ if __name__ == '__main__':
         return U_r
 
     # def initial(x):
-    #     if x < -4:
+    #     if x < 1:
     #         return euler.u_p_rho_to_U(u=2.629369, p=10.333333, rho=3.857143)
     #     else:
     #         return euler.u_p_rho_to_U(u=0, p=1, rho=1+0.2*np.sin(5*x))
 
 
-    def initial(x):
-        U_l = euler.u_p_rho_to_U(u=0, p=1000, rho=1)
-        U_m = euler.u_p_rho_to_U(u=0, p=0.01, rho=1)
-        U_r = euler.u_p_rho_to_U(u=0, p=100, rho=1)
-        if x < 0.1:
-            return U_l
-        elif x >= 0.1 and x < 0.9:
-            return U_m
-        else:
-            return U_r
+    # def initial(x):
+    #     U_l = euler.u_p_rho_to_U(u=0, p=1000, rho=1)
+    #     U_m = euler.u_p_rho_to_U(u=0, p=0.01, rho=1)
+    #     U_r = euler.u_p_rho_to_U(u=0, p=100, rho=1)
+    #     if x < 0.1:
+    #         return U_l
+    #     elif x >= 0.1 and x < 0.9:
+    #         return U_m
+    #     else:
+    #         return U_r
 
     solver = VrSolver(3)
+    # solver = LrSolver()
     
     # Set Mesh:
     x_min = 0.0
     x_max = 1.0
-    x_num = 100
+    x_num = 200
     solver.set_mesh(x_min = x_min, x_max = x_max, x_num = x_num)
     solver.set_initial_condition(func=lambda x: initial(x))
     # solver.set_boundary_condition(boundary="periodic")
-    # solver.set_boundary_condition(boundary="free")
-    solver.set_boundary_condition(boundary="reflect")
+    solver.set_boundary_condition(boundary="free")
+    # solver.set_boundary_condition(boundary="reflect")
 
     # Set Time Scheme:
     start = 0.0
-    stop = 0.038
-    t_num = 190
+    stop = 0.2
+    t_num = 100
     solver.set_time_stepper(start = start, stop = stop, t_num = t_num)
     # Set Riemann Problem:
-    from riemann import EulerFVS
-    riemann = EulerFVS()
+    # from riemann import EulerAusm
+    # riemann = EulerAusm()
+    from riemann import EulerVanLeer
+    riemann = EulerVanLeer()
     solver.set_riemann_solver(riemann = riemann)
 
     # Set Limiter
@@ -217,21 +191,24 @@ if __name__ == '__main__':
     from limiter import EulerNewLimiter
     # limiter = BJLimiter(10)
     # limiter = NewLimiter(1)
-    limiter = EulerBJLimiter(True)
-    # limiter = EulerNewLimiter(2, True)
+    # limiter = EulerBJLimiter(True)
+    limiter = EulerNewLimiter(2, True)
     solver.set_limiter(limiter)
 
     from limiter import EdgeIndicator
     from limiter import RenIndicator
-    indicator = EdgeIndicator(0.001)
-    # indicator = RenIndicator(1)
+    # indicator = EdgeIndicator(1)
+    indicator = RenIndicator(1)
     solver.set_indicator(indicator)
 
     x_vec = solver.get_x_vec()
     t_vec = solver.get_t_vec()
+    begin = time()
 
     from displayer import Transient
     solver.run_with_transient()
+    end = time()
+    print('Total time : %.2f s' %(end-begin))
     U_mat = solver.get_u_mat()
     u_vec = np.zeros(len(U_mat))
     p_vec = np.zeros(len(U_mat))
@@ -240,8 +217,11 @@ if __name__ == '__main__':
       u, p, rho = euler.U_to_u_p_rho(U_mat[i])
       u_vec[i], p_vec[i], rho_vec[i] = u, p, rho
     transient = Transient()
-    transient.add_plot(x_vec = x_vec, u_vec = rho_vec, type = "k-+", label = r'$\rho(x)$')
+    transient.add_plot(x_vec = x_vec, u_vec = rho_vec, type = "k.", label = r'$\rho(x)$')
     transient.display()
+    # import data
+    # filename = "result/Blast/p3_400_new2_ren.csv"
+    # data.write_rows(filename, [x_vec, rho_vec])
 
     # from displayer import Animation
     # solver.run_with_animation()
@@ -257,8 +237,8 @@ if __name__ == '__main__':
     # animation = Animation(x_vec=x_vec, t_vec=t_vec, u_mat=rho_vec, u_label = r'$\rho(x)$')
     # animation.display(type = "k:", y_min = 0, y_max = 7.2)
 
-    # from displayer import Contour
-    # trouble_mat = solver.get_trouble_history()
-    # t_vec = np.linspace(start=start, stop=stop, endpoint=True, num=t_num*3)
-    # contour = Contour(x_vec=x_vec, t_vec=t_vec, u_mat=trouble_mat)
-    # contour.display()
+    from displayer import Contour
+    trouble_mat = solver.get_trouble_history()
+    t_vec = np.linspace(start=start, stop=stop, endpoint=True, num=t_num*3)
+    contour = Contour(x_vec=x_vec, t_vec=t_vec, u_mat=trouble_mat)
+    contour.display()

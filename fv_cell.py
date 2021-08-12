@@ -80,7 +80,7 @@ class LinearCell(PiecewiseCell):
     self._dx = self._tail - self._head
     self._nequa = nequa
     self._degree = 1
-    self._coef = np.zeros(self._degree)
+    self._coef = np.zeros((self._degree, self._nequa))
 
   def f_p0_vec(self, x):
     return np.array([self.f0_0(x)])

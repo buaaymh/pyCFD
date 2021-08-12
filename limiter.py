@@ -53,13 +53,15 @@ class Limiter(abc.ABC):
 
   def _positive_preserve(self, cells):
     for i in range(len(cells)):
-      mean = cells[i].get_u_mean()
       U_l = cells[i].u_on_left()
+      u_l, p_l, rho_l = self._euler.U_to_u_p_rho(U_l)
       U_r = cells[i].u_on_right()
+      u_r, p_r, rho_r = self._euler.U_to_u_p_rho(U_r)
       U_m = cells[i].get_u((cells[i].x_left()+cells[i].x_right())/2)
-      rho_min = min(U_l[0], U_r[0], U_m[0])
-      E_min = min(U_l[2], U_r[2], U_m[2])
-      if E_min < 0 or rho_min < 0:
+      u_m, p_m, rho_m = self._euler.U_to_u_p_rho(U_m)
+      rho_min = min(rho_l, rho_r, rho_m)
+      p_min = min(p_l, p_r, p_m)
+      if p_min < 0 or rho_min < 0:
         C = cells[i].get_coef()
         cells[i].set_coef(C*0)
 
@@ -191,7 +193,6 @@ class NewLimiter(Limiter):
 
   def __init__(self, n):
     self._n = n
-    self._euler = Euler1d(gamma=1.4)
 
   def limit_periodic(self, cells):
     self._dx, self._p = cells[0].length(), cells[0].num_coef()
@@ -338,7 +339,7 @@ class RenIndicator():
 
   def detect(self, cell_l, cell_m, cell_r):
     dx, p = cell_l.length(), cell_l.num_coef()
-    hp = dx** ((p+1)/2)
+    hp = dx** ((min(p,2)+1)/2)
     mean_l = cell_l.get_u_mean()
     mean_m = cell_m.get_u_mean()
     mean_r = cell_r.get_u_mean()
@@ -354,7 +355,7 @@ class RenIndicator():
 
   def detect_end_l(self, cell_m, cell_r):
     dx, p = cell_m.length(), cell_m.num_coef()
-    hp = dx** ((p+1)/2)
+    hp = dx** ((min(p,2)+1)/2)
     mean_m = cell_m.get_u_mean()
     mean_r = cell_r.get_u_mean()
     du_r = cell_r.get_u(cell_r.x_left() -dx/2) - mean_m
@@ -368,7 +369,7 @@ class RenIndicator():
 
   def detect_end_r(self, cell_l, cell_m):
     dx, p = cell_m.length(), cell_m.num_coef()
-    hp = dx** ((p+1)/2)
+    hp = dx** ((min(p,2)+1)/2)
     mean_m = cell_m.get_u_mean()
     mean_l = cell_l.get_u_mean()
     du_l = cell_l.get_u(cell_l.x_right()+dx/2) - mean_m
@@ -390,42 +391,45 @@ class EdgeIndicator():
 
   def detect(self, cell_l, cell_m, cell_r):
     dx, p = cell_m.length(), cell_m.num_coef()
+    hp = dx** ((min(p,2)+1)/2)
     mean_l = cell_l.get_u_mean()
     mean_m = cell_m.get_u_mean()
     mean_r = cell_r.get_u_mean()
     du_l = cell_l.u_on_right() - cell_m.u_on_left()
     du_r = cell_m.u_on_right() - cell_r.u_on_left()
     if cell_m.num_equa() > 1:
-      u_max = max(abs(mean_l[0]), abs(mean_m[0]), abs(mean_r[0]), 1e-6)
+      u_max = max(abs(mean_l[0]), abs(mean_m[0]), abs(mean_r[0]), 1e-6)*hp*2
       indicator = (abs(du_l[0]) + abs(du_r[0])) / u_max
     else:
-      u_max = max(abs(mean_l), abs(mean_m), abs(mean_r), 1e-6)
+      u_max = max(abs(mean_l), abs(mean_m), abs(mean_r), 1e-6)*hp*2
       indicator = (abs(du_l) + abs(du_r)) / u_max
     return indicator
 
   def detect_end_l(self, cell_m, cell_r):
     dx, p = cell_m.length(), cell_m.num_coef()
+    hp = dx** ((min(p,2)+1)/2)
     mean_m = cell_m.get_u_mean()
     mean_r = cell_r.get_u_mean()
     du_r = cell_m.u_on_right() - cell_r.u_on_left()
     if cell_m.num_equa() > 1:
-      u_max = max(abs(mean_m[0]), abs(mean_r[0]), 1e-6)
+      u_max = max(abs(mean_m[0]), abs(mean_r[0]), 1e-6)*hp*2
       indicator = abs(du_r[0]) / u_max
     else:
-      u_max = max(abs(mean_m), abs(mean_r), 1e-6)
+      u_max = max(abs(mean_m), abs(mean_r), 1e-6)*hp*2
       indicator = abs(du_r) / u_max
     return indicator
 
   def detect_end_r(self, cell_l, cell_m):
     dx, p = cell_m.length(), cell_m.num_coef()
+    hp = dx** ((min(p,2)+1)/2)
     mean_m = cell_m.get_u_mean()
     mean_l = cell_l.get_u_mean()
     du_l = cell_m.u_on_left() - cell_l.u_on_right()
     if cell_m.num_equa() > 1:
-      u_max = max(abs(mean_m[0]), abs(mean_l[0]), 1e-6)
+      u_max = max(abs(mean_m[0]), abs(mean_l[0]), 1e-6)*hp*2
       indicator = abs(du_l[0]) / u_max
     else:
-      u_max = max(abs(mean_m), abs(mean_l), 1e-6)
+      u_max = max(abs(mean_m), abs(mean_l), 1e-6)*hp*2
       indicator = abs(du_l) / u_max
     return indicator
 
