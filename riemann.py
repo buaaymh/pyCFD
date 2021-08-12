@@ -79,7 +79,7 @@ class Burgers(RiemannSolver):
             u = 0.0
         return u
 
-class EulerFVS(RiemannSolver):
+class EulerAusm(RiemannSolver):
 
     def __init__(self, gamma=1.4):
         self._gas = gas.Ideal(gamma)
@@ -138,7 +138,61 @@ class EulerFVS(RiemannSolver):
         flux[1] += p
         return flux
 
+class EulerVanLeer(RiemannSolver):
 
+    def __init__(self, gamma=1.4):
+        self._gas = gas.Ideal(gamma)
+        self._equation = equation.Euler1d(gamma)
+
+    def num_equations(self):
+        return 3
+
+    def flux(self, U):
+        return self._equation.F(U)
+
+    def eval_flux(self, U_l, U_r):
+        flux_positive = self.eval_positive_flux(U_l)
+        flux_negative = self.eval_negative_flux(U_r)
+        return flux_positive+flux_negative
+
+    def eval_reflected_flux(self, U, normal):
+        U_b = U
+        U_b[1] *= -1
+        if normal > 0:
+            return self.eval_flux(U, U_b)
+        else:
+            return self.eval_flux(U_b, U)
+
+    def eval_positive_flux(self, U):
+        u, p, rho = self._equation.U_to_u_p_rho(U)
+        a = self._gas.p_rho_to_a(p, rho)
+        mach = u / a
+        if mach >= 1:
+          return self.flux(U)
+        elif mach < -1:
+          return np.zeros(3)
+        flux = np.array([1, 2*a/self._gas.gamma(), 2*a**2 / (self._gas.gamma_plus_1()*self._gas.gamma_minus_1())])
+        temp = self._gas.gamma_minus_1() * mach * 0.5 + 1
+        flux[1] *= temp
+        flux[2] *= temp ** 2
+        flux *= rho * a * (1 + mach)**2 * 0.25
+        return flux
+    
+    def eval_negative_flux(self, U):
+        u, p, rho = self._equation.U_to_u_p_rho(U)
+        a = self._gas.p_rho_to_a(p, rho)
+        mach = u / a
+        if mach <= -1:
+          return self.flux(U)
+        elif mach > 1:
+          return np.zeros(3)
+        flux = np.array([1, 2*a/self._gas.gamma(), 2*a**2/(self._gas.gamma_plus_1()*self._gas.gamma_minus_1())])
+        temp = self._gas.gamma_minus_1() * mach * 0.5 - 1
+        flux[1] *= temp
+        flux[2] *= temp ** 2
+        flux *= rho * a * (1 - mach)**2 * -0.25
+        return flux
+  
 if __name__ == '__main__':
     solver = Linear(a=2.0)
     n = solver.num_equations()
@@ -176,7 +230,7 @@ if __name__ == '__main__':
     flux = solver.eval_flux(u_l, u_r)
     print(" left_shock", flux, "==", solver.flux(u_r))
 
-    solver = EulerFVS()
+    solver = EulerVanLeer()
     euler = equation.Euler1d(gamma=1.4)
     # Sod
     print("Sod")
@@ -219,8 +273,6 @@ if __name__ == '__main__':
     U_l = euler.u_p_rho_to_U(u=-3, p=0.4, rho=1)
     U_r = euler.u_p_rho_to_U(u=+3, p=0.4, rho=1)
     flux = solver.eval_flux(U_l, U_r)
-    print(U_l)
-    print(U_r)
     print(flux)
     U = euler.u_p_rho_to_U(u=0.0, p=0.001894, rho=0.21852)
     flux = solver.flux(U)
