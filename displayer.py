@@ -95,22 +95,22 @@ if __name__ == '__main__':
     x_vec = np.linspace(start=dx/2, stop=end-dx/2, num=n)
     t_vec = np.linspace(start=0.0, stop=1.0, num=51)
     u_mat = np.zeros((len(t_vec), len(x_vec)))
-    u_0 = lambda x: np.sign(np.sin(x))
-    for i in range(len(t_vec)):
-        for j in range(len(x_vec)):
-            x_0 = x_vec[j] - c * t_vec[i]
-            u_mat[i][j] = u_0(x_0)
+    # u_0 = lambda x: np.sign(np.sin(x))
+    # for i in range(len(t_vec)):
+    #     for j in range(len(x_vec)):
+    #         x_0 = x_vec[j] - c * t_vec[i]
+    #         u_mat[i][j] = u_0(x_0)
 
-    d = Contour(x_vec=x_vec, t_vec=t_vec, u_mat=u_mat)
-    d.display()
-
-    d = Transient()
-    # d.add_plot(x_vec = x_vec, u_vec = u_mat[0], type = "k", label = "U0")
-    # d.add_plot(x_vec = x_vec, u_vec = u_mat[1], type = "k--", label = "U1")
+    # d = Contour(x_vec=x_vec, t_vec=t_vec, u_mat=u_mat)
     # d.display()
 
-    # d = Animation(x_vec=x_vec, t_vec=t_vec, u_mat=u_mat)
-    # d.display(type = "k-")
+    d = Transient()
+    d.add_plot(x_vec = x_vec, u_vec = u_mat[0], type = "k", label = "U0")
+    d.add_plot(x_vec = x_vec, u_vec = u_mat[1], type = "k--", label = "U1")
+    d.display()
+
+    d = Animation(x_vec=x_vec, t_vec=t_vec, u_mat=u_mat)
+    d.display(type = "k-")
 
 
     # x_vec = np.linspace(start=0.0, stop=2, num=n*10, endpoint = False)

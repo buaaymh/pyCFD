@@ -381,17 +381,17 @@ if __name__ == '__main__':
     # Set Mesh:
     x_min = 0.0
     x_max = 1.0
-    x_num = 400
+    x_num = 5000
     solver.set_mesh(x_min = x_min, x_max = x_max, x_num = x_num)
     solver.set_initial_condition(func=lambda x: initial(x))
-    # solver.set_boundary_condition(boundary="free")
+    solver.set_boundary_condition(boundary="free")
     solver.set_boundary_condition(boundary="reflect")
     # solver.set_boundary_condition(boundary="periodic")
 
     # Set Time Scheme:
     start = 0.0
     stop = 0.038
-    t_num = 760
+    t_num = 15000
     solver.set_time_stepper(start = start, stop = stop, t_num = t_num)
 
     # Set Riemann Problem:
@@ -430,13 +430,13 @@ if __name__ == '__main__':
         u_vec[i], p_vec[i], rho_vec[i] = u, p, rho
     from displayer import Transient
     transient = Transient(u_label = "Density")
-    transient.add_plot(x_vec = x_vec, u_vec = rho_vec, type = "k", label = r'$\rho$')
+    # transient.add_plot(x_vec = x_vec, u_vec = rho_vec, type = "k", label = r'$\rho$')
     # transient.add_plot(x_vec = x_vec, u_vec = u_vec, type = "r.", label = r'$u$')
     # transient.add_plot(x_vec = x_vec, u_vec = p_vec, type = "b.", label = r'$p$')
-    transient.display()
-    # # import data
-    # # filename = "result/Shu-Osher/weno_10000.csv"
-    # # data.write_rows(filename, [x_vec, rho_vec])
+    # transient.display()
+    import data
+    filename = "result/Blast/weno_5000_15000.csv"
+    data.write_rows(filename, [x_vec, rho_vec])
     
 
     # solver.run_with_animation()

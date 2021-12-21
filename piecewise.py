@@ -139,29 +139,23 @@ if __name__ == '__main__':
   # Set Mesh:
   x_min = 0.0
   x_max = 1.0
-  x_num = 400
+  x_num = 50
   reconstruction.set_mesh(x_min = x_min, x_max = x_max, x_num = x_num)
 
   # Set Initial Condition:
   def initial(x):
     return np.sin(8 * x * np.pi) * 1.5 + 2
 
-  def initial(x):
-    return np.sign(x-0.5) + 1.5
+  # def initial(x):
+  #   return np.sign(x-0.5) + 1.5
 
-  def initial(x):
-    if x > 0.2 and x < 0.3:
-      return 4 - np.abs(x-0.25) * 60
-    elif x > 0.6 and x < 0.9:
-      return 4
-    else:
-      return 1
-
-  def initial(x):
-    if x < 0.5:
-      return 1000
-    else:
-      return 0.01
+  # def initial(x):
+  #   if x > 0.2 and x < 0.3:
+  #     return 4 - np.abs(x-0.25) * 60
+  #   elif x > 0.6 and x < 0.9:
+  #     return 4
+  #   else:
+  #     return 1
 
   reconstruction.set_initial_condition(func=lambda x: initial(x))
   reconstruction.set_boundary_condition(boundary="periodic")
@@ -170,13 +164,13 @@ if __name__ == '__main__':
 
   from limiter import BJLimiter
   from limiter import NewLimiter
-  limiter = BJLimiter(10)
-  # limiter = NewLimiter(1)
+  # limiter = BJLimiter(10)
+  limiter = NewLimiter(2)
   reconstruction.set_limiter(limiter)
 
   from limiter import EdgeIndicator
   from limiter import RenIndicator
-  indicator = EdgeIndicator(0.001)
+  indicator = EdgeIndicator(1)
   # indicator = RenIndicator(1)
   reconstruction.set_indicator(indicator)
   reconstruction.limit_result()
