@@ -37,8 +37,8 @@ class Transient(Displayer):
         self.axis.set_xlabel("x")
         self.axis.set_ylabel(u_label)
 
-    def add_plot(self, x_vec, u_vec, type = "k", label = "Undefined"):
-        self.axis.plot(x_vec, u_vec, type, label=label)
+    def add_plot(self, x_vec, u_vec, label = "Undefined"):
+        self.axis.plot(x_vec, u_vec, label=label)
 
     def display(self):
         self.axis.grid(True)

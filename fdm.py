@@ -38,6 +38,11 @@ class NumericalSolver(abc.ABC):
             self._dual_free(u_vec, rhs)
         elif (self.boundary == "reflect"):
             self._dual_reflect(u_vec, rhs)
+        elif (self.boundary == "explosion"):
+            self._dual_free(u_vec, rhs)
+            for i in range(len(u_vec)):
+                rhs[i] += self.riemann.geoSource(u_vec[i], self.x_vec[i], 2)
+
         return rhs
 
     def get_x_vec(self):

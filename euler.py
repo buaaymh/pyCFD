@@ -1,6 +1,7 @@
 import abc
 import numpy as np
 from scipy.optimize import fsolve
+import csv
 
 import equation
 import gas
@@ -21,12 +22,12 @@ class RiemannSolver(abc.ABC):
 
   def U(self, x, t):
     if t == 0:
-      if x <= 0:
+      if x <= 0.5:
         return self._U_L
       else:
         return self._U_R
     else:  # t > 0
-      return self._U(v=x/t)
+      return self._U(v=(x-0.5)/t)
 
   @abc.abstractmethod
   def _U(self, v):
@@ -236,28 +237,31 @@ if __name__ == '__main__':
 
   problems = dict()
   # tests in Table 4.1 of Toro[2009], see https://doi.org/10.1007/b79761
-  problems['Sod'] = (0.25,
-    euler.u_p_rho_to_U(u=0, p=1.0, rho=1.0),
-    euler.u_p_rho_to_U(u=0, p=0.1, rho=0.125))
-  problems['ShockCollision'] = (0.035, 
-    euler.u_p_rho_to_U(u=19.5975,  p=460.894, rho=5.99924),
-    euler.u_p_rho_to_U(u=-6.19633, p=46.0950, rho=5.99242))
-  problems['BlastFromLeft'] = (0.012,
-    euler.u_p_rho_to_U(u=0, p=1000,  rho=1),
-    euler.u_p_rho_to_U(u=0, p=0.01, rho=1))
-  problems['BlastFromRight'] = (0.035,
-    euler.u_p_rho_to_U(u=0, p=0.01, rho=1),
-    euler.u_p_rho_to_U(u=0, p=100,  rho=1))
-  problems['AlmostVacuumed'] = (0.15,
-    euler.u_p_rho_to_U(u=-2, p=0.4, rho=1),
-    euler.u_p_rho_to_U(u=+2, p=0.4, rho=1))
-  # other tests
-  problems['Vacuumed'] = (0.1,
-    euler.u_p_rho_to_U(u=-4, p=0.4, rho=1),
-    euler.u_p_rho_to_U(u=+4, p=0.4, rho=1))
+  # problems['Sod'] = (0.1,
+  #   euler.u_p_rho_to_U(u=0.698, p=3.528, rho=0.445),
+  #   euler.u_p_rho_to_U(u=0.0, p=0.571, rho=0.5))
+  # problems['ShockCollision'] = (0.035, 
+  #   euler.u_p_rho_to_U(u=19.5975,  p=460.894, rho=5.99924),
+  #   euler.u_p_rho_to_U(u=-6.19633, p=46.0950, rho=5.99242))
+  # problems['BlastFromLeft'] = (0.012,
+  #   euler.u_p_rho_to_U(u=0, p=1000,  rho=1),
+  #   euler.u_p_rho_to_U(u=0, p=0.01, rho=1))
+  # problems['BlastFromRight'] = (0.035,
+  #   euler.u_p_rho_to_U(u=0, p=0.01, rho=1),
+  #   euler.u_p_rho_to_U(u=0, p=100,  rho=1))
+  # problems['AlmostVacuumed'] = (0.15,
+  #   euler.u_p_rho_to_U(u=-2, p=0.4, rho=1),
+  #   euler.u_p_rho_to_U(u=+2, p=0.4, rho=1))
+  # # other tests
+  # problems['Vacuumed'] = (0.1,
+  #   euler.u_p_rho_to_U(u=-4, p=0.4, rho=1),
+  #   euler.u_p_rho_to_U(u=+4, p=0.4, rho=1))
+  problems['Expend'] = (0.25,
+    euler.u_p_rho_to_U(u=0.0, p=1.0, rho=1.0),
+    euler.u_p_rho_to_U(u=0.0, p=0.1, rho=0.125))
 
   # range for plot
-  x_vec = np.linspace(start=-0.5, stop=0.5, num=10001)
+  x_vec = np.linspace(start=0, stop=1.0, num=1001)
 
   for name, problem in problems.items():
     U_L = problem[1]
@@ -276,6 +280,12 @@ if __name__ == '__main__':
       raise
     finally:
       pass
+    # with open("Sod.csv", 'w', newline='') as f:
+    #   writer = csv.writer(f)
+    #   writer.writerow(["x", "u", "p", "rho"])
+    #   for i in range(len(x_vec)):
+    #     writer.writerow([x_vec[i], u_vec[i], p_vec[i], rho_vec[i]])
+    
     plt.figure(figsize=(4,5))
     # subplots = (311, 312, 313)
     titles = (r'$\rho(x)$', r'$p(x)$', r'$u(x)$')

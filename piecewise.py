@@ -70,7 +70,8 @@ class Piecewise(abc.ABC):
         x_vec = np.linspace(start=start, stop=stop, endpoint=True, num=x_num_per_cell)
       u_vec = self._cells[i].get_u(x_vec)
       self.axis.plot(x_vec, np.transpose(u_vec))
-    plt.show()
+    # plt.show()
+    plt.savefig('temp.pdf')
 
   def trouble_histograms(self):
     self.fig, self.axis = plt.subplots()
@@ -139,12 +140,12 @@ if __name__ == '__main__':
   # Set Mesh:
   x_min = 0.0
   x_max = 1.0
-  x_num = 50
+  x_num = 13
   reconstruction.set_mesh(x_min = x_min, x_max = x_max, x_num = x_num)
 
   # Set Initial Condition:
   def initial(x):
-    return np.sin(8 * x * np.pi) * 1.5 + 2
+    return np.sin(4 * x * np.pi) * 1.5 + 2
 
   # def initial(x):
   #   return np.sign(x-0.5) + 1.5

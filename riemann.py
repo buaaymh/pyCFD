@@ -12,6 +12,10 @@ class RiemannSolver(abc.ABC):
         pass
 
     @abc.abstractmethod
+    def geoSource(self, U, x, alpha):
+        pass
+
+    @abc.abstractmethod
     def eval_flux(self, u_l, u_r):
         pass
 
@@ -154,6 +158,11 @@ class EulerVanLeer(RiemannSolver):
         flux_positive = self.eval_positive_flux(U_l)
         flux_negative = self.eval_negative_flux(U_r)
         return flux_positive+flux_negative
+
+    def geoSource(self, U, x, alpha):
+        u = U[1]/U[0]
+        p = (U[2] - u*U[1]/2) * self._gas.gamma_minus_1()
+        return -(alpha/x)*np.array([U[1], U[1]*u, u*(U[2]+p)])
 
     def eval_reflected_flux(self, U, normal):
         U_b = U
